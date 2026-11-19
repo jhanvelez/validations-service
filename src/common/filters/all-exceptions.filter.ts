@@ -36,6 +36,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    if (this.hasCustomPayload(exception)) {
+      httpAdapter.reply(
+        context.getResponse(),
+        exception.getResponse(),
+        statusCode,
+      );
+      return;
+    }
+
     const { message, error } = this.toErrorBody(exception, statusCode);
 
     httpAdapter.reply(
@@ -50,6 +59,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode,
     );
   }
+
+    private hasCustomPayload(exception: unknown): exception is HttpException {
+      if (!(exception instanceof HttpException)) {
+        return false;
+      }
+
+      const response = exception.getResponse();
+      return typeof response === 'object' && !('message' in response);
+    }
 
   private toErrorBody(exception: unknown, statusCode: number): ErrorBody {
     if (!(exception instanceof HttpException)) {
