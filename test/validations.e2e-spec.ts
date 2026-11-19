@@ -5,6 +5,7 @@ import request from 'supertest';
 import { inject } from 'vitest';
 import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
+import { AuditService } from '../src/audit/audit.service.js';
 import { mongoConfig } from '../src/config/configuration.js';
 import { ExchangeRateClient } from '../src/exchange-rate/exchange-rate.client.js';
 
@@ -20,6 +21,7 @@ const exchangeRate = {
 describe('Validations (e2e)', () => {
   let app: INestApplication<App>;
   const exchangeRateClient = { getLatestRate: vi.fn() };
+    const auditService = { recordValidationCreated: vi.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -29,6 +31,8 @@ describe('Validations (e2e)', () => {
       .useValue({ uri: inject('mongoUri') })
       .overrideProvider(ExchangeRateClient)
       .useValue(exchangeRateClient)
+      .overrideProvider(AuditService)
+      .useValue(auditService)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -38,6 +42,8 @@ describe('Validations (e2e)', () => {
   beforeEach(() => {
     exchangeRateClient.getLatestRate.mockReset();
     exchangeRateClient.getLatestRate.mockResolvedValue(exchangeRate);
+    auditService.recordValidationCreated.mockReset();
+    auditService.recordValidationCreated.mockResolvedValue(undefined);
   });
 
   afterAll(async () => {
@@ -52,6 +58,13 @@ describe('Validations (e2e)', () => {
         .expect(201);
 
       expect(Types.ObjectId.isValid(response.body.id)).toBe(true);
+      
+      expect(auditService.recordValidationCreated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          validationId: response.body.id,
+          documentNumber: '1020304050',
+        }),
+      );
     });
 
     it('returns 400 with every invalid field', async () => {
@@ -95,6 +108,25 @@ describe('Validations (e2e)', () => {
         error: 'Bad Gateway',
         message: 'Exchange rate provider is unavailable',
       });
+    });
+
+    it('returns 503 and does not keep the validation when the audit fails', async () => {
+      auditService.recordValidationCreated.mockRejectedValue(
+        new Error('DynamoDB unavailable'),
+      );
+
+      const response = await request(app.getHttpServer())
+        .post('/validations')
+        .send({ name: 'Juan Pérez', documentNumber: '1020304050' })
+        .expect(503);
+
+      const [[event]] = auditService.recordValidationCreated.mock.calls;
+      await request(app.getHttpServer())
+        .get(`/validations/${event.validationId}`)
+        .expect(404);
+      expect(response.body.message).toBe(
+        'Audit log is unavailable, the validation was not created',
+      );
     });
   });
 
