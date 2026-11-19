@@ -1,9 +1,19 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadGatewayException, NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
+import { ExchangeRateClient } from '../exchange-rate/exchange-rate.client.js';
 import { Validation } from './schemas/validation.schema.js';
 import { ValidationsService } from './validations.service.js';
+
+const exchangeRate = {
+  provider: 'exchangerate-api.com',
+  baseCurrency: 'USD',
+  targetCurrency: 'COP',
+  rate: 3320.18,
+  rateUpdatedAt: new Date('2026-11-18T00:02:31Z'),
+  fetchedAt: new Date('2026-11-18T15:00:00Z'),
+};
 
 describe('ValidationsService', () => {
   let service: ValidationsService;
@@ -11,6 +21,7 @@ describe('ValidationsService', () => {
     create: vi.fn(),
     findById: vi.fn(),
   };
+  const exchangeRateClient = { getLatestRate: vi.fn() };
 
   beforeEach(async () => {
     vi.resetAllMocks();
@@ -19,19 +30,35 @@ describe('ValidationsService', () => {
       providers: [
         ValidationsService,
         { provide: getModelToken(Validation.name), useValue: validationModel },
+        { provide: ExchangeRateClient, useValue: exchangeRateClient },
       ],
     }).compile();
 
     service = moduleRef.get(ValidationsService);
   });
 
-  it('persists a new validation', async () => {
+  it('persists a new validation enriched with the exchange rate', async () => {
     const dto = { name: 'Juan Pérez', documentNumber: '1020304050' };
     const created = { id: new Types.ObjectId().toString(), ...dto };
+    exchangeRateClient.getLatestRate.mockResolvedValue(exchangeRate);
     validationModel.create.mockResolvedValue(created);
 
     await expect(service.create(dto)).resolves.toBe(created);
-    expect(validationModel.create).toHaveBeenCalledWith(dto);
+    expect(validationModel.create).toHaveBeenCalledWith({
+      ...dto,
+      exchangeRate,
+    });
+  });
+
+  it('does not persist when the enrichment fails', async () => {
+    exchangeRateClient.getLatestRate.mockRejectedValue(
+      new BadGatewayException(),
+    );
+
+    await expect(
+      service.create({ name: 'Juan Pérez', documentNumber: '1020304050' }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
+    expect(validationModel.create).not.toHaveBeenCalled();
   });
 
   it('returns the validation when it exists', async () => {

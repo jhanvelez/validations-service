@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common';
+import { BadGatewayException, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
 import request from 'supertest';
@@ -6,9 +6,20 @@ import { inject } from 'vitest';
 import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { mongoConfig } from '../src/config/configuration.js';
+import { ExchangeRateClient } from '../src/exchange-rate/exchange-rate.client.js';
+
+const exchangeRate = {
+  provider: 'exchangerate-api.com',
+  baseCurrency: 'USD',
+  targetCurrency: 'COP',
+  rate: 3320.18,
+  rateUpdatedAt: new Date('2026-11-18T00:02:31Z'),
+  fetchedAt: new Date('2026-11-18T15:00:00Z'),
+};
 
 describe('Validations (e2e)', () => {
   let app: INestApplication<App>;
+  const exchangeRateClient = { getLatestRate: vi.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -16,10 +27,17 @@ describe('Validations (e2e)', () => {
     })
       .overrideProvider(mongoConfig.KEY)
       .useValue({ uri: inject('mongoUri') })
+      .overrideProvider(ExchangeRateClient)
+      .useValue(exchangeRateClient)
       .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
+  });
+
+  beforeEach(() => {
+    exchangeRateClient.getLatestRate.mockReset();
+    exchangeRateClient.getLatestRate.mockResolvedValue(exchangeRate);
   });
 
   afterAll(async () => {
@@ -61,6 +79,23 @@ describe('Validations (e2e)', () => {
         .send({ name: 'Juan Pérez', documentNumber: '1020304050', admin: true })
         .expect(400);
     });
+
+    it('returns 502 when the exchange rate provider fails', async () => {
+      exchangeRateClient.getLatestRate.mockRejectedValue(
+        new BadGatewayException('Exchange rate provider is unavailable'),
+      );
+
+      const response = await request(app.getHttpServer())
+        .post('/validations')
+        .send({ name: 'Juan Pérez', documentNumber: '1020304050' })
+        .expect(502);
+
+      expect(response.body).toMatchObject({
+        statusCode: 502,
+        error: 'Bad Gateway',
+        message: 'Exchange rate provider is unavailable',
+      });
+    });
   });
 
   describe('GET /validations/:id', () => {
@@ -78,6 +113,14 @@ describe('Validations (e2e)', () => {
         id: created.body.id,
         name: 'Ana Gómez',
         documentNumber: '52123456',
+        exchangeRate: {
+          provider: 'exchangerate-api.com',
+          baseCurrency: 'USD',
+          targetCurrency: 'COP',
+          rate: 3320.18,
+          rateUpdatedAt: '2026-11-18T00:02:31.000Z',
+          fetchedAt: '2026-11-18T15:00:00.000Z',
+        },
       });
       expect(response.body.createdAt).toBeDefined();
       expect(response.body).not.toHaveProperty('_id');

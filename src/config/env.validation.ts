@@ -16,4 +16,6 @@ export const envValidationSchema = Joi.object({
     .required(),
   EXTERNAL_API_TIMEOUT_MS: Joi.number().integer().min(100).default(3000),
   EXTERNAL_API_RETRIES: Joi.number().integer().min(0).max(5).default(2),
+    EXCHANGE_BASE_CURRENCY: Joi.string().length(3).uppercase().default('USD'),
+  EXCHANGE_TARGET_CURRENCY: Joi.string().length(3).uppercase().default('COP'),
 });
