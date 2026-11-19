@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+reports
+.git
+.github
+.husky
+.env
+.env.*
+!.env.example
+ci
+*.log
+Dockerfile
+docker-compose*.yml
+Jenkinsfile
+README.md
