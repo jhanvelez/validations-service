@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './all-exceptions.filter.js';
@@ -67,5 +68,18 @@ describe('AllExceptionsFilter', () => {
       }),
       500,
     );
+  });
+
+  it('keeps custom payloads such as health check results', () => {
+    const healthResult = {
+      status: 'error',
+      info: {},
+      error: { mongodb: { status: 'down' } },
+      details: { mongodb: { status: 'down' } },
+    };
+
+    filter.catch(new ServiceUnavailableException(healthResult), host);
+
+    expect(reply).toHaveBeenCalledWith(response, healthResult, 503);
   });
 });

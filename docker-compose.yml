@@ -4,9 +4,9 @@ services:
       context: .
       target: runtime
     image: validations-service:local
-    container_name: validations-app
     env_file: .env
     environment:
+      NODE_ENV: production
       PORT: 3000
       MONGO_URI: mongodb://mongo:27017/validations
       DYNAMODB_ENDPOINT: http://dynamodb:8000
@@ -21,7 +21,6 @@ services:
 
   mongo:
     image: mongo:8
-    container_name: validations-mongo
     ports:
       - "27017:27017"
     volumes:
@@ -34,7 +33,6 @@ services:
 
   dynamodb:
     image: amazon/dynamodb-local:latest
-    container_name: validations-dynamodb
     user: root
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
     ports:
@@ -44,7 +42,6 @@ services:
 
   dynamodb-init:
     image: amazon/aws-cli:latest
-    container_name: validations-dynamodb-init
     depends_on:
       - dynamodb
     environment:

@@ -16,6 +16,7 @@ describe('envValidationSchema', () => {
     expect(value).toMatchObject({
       NODE_ENV: 'development',
       PORT: 3000,
+      LOG_LEVEL: 'info',
       DYNAMODB_REGION: 'us-east-1',
       EXTERNAL_API_TIMEOUT_MS: 3000,
       EXTERNAL_API_RETRIES: 2,

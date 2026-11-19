@@ -10,6 +10,7 @@ export default defineConfig({
     hookTimeout: 120_000,
     env: {
       NODE_ENV: 'test',
+      LOG_LEVEL: 'silent',
       MONGO_URI: 'mongodb://localhost:27017/validations-test',
       DYNAMODB_ENDPOINT: 'http://localhost:8000',
       DYNAMODB_TABLE: 'validation-audit-test',

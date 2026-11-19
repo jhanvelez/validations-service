@@ -6,7 +6,7 @@ import { dynamoDbDocumentClientProvider } from './dynamodb.provider.js';
 
 @Module({
   providers: [dynamoDbDocumentClientProvider, AuditService],
-  exports: [AuditService],
+    exports: [AuditService, DYNAMODB_DOCUMENT_CLIENT],
 })
 export class AuditModule implements OnApplicationShutdown {
   constructor(
