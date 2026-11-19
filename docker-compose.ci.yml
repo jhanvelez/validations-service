@@ -1,0 +1,9 @@
+services:
+  app:
+    ports: !reset []
+  mongo:
+    ports: !reset []
+    volumes: !reset []
+  dynamodb:
+    ports: !reset []
+    volumes: !reset []
