@@ -19,4 +19,6 @@ export const externalApiConfig = registerAs('externalApi', () => ({
   baseUrl: process.env.EXTERNAL_API_URL as string,
   timeoutMs: Number(process.env.EXTERNAL_API_TIMEOUT_MS),
   retries: Number(process.env.EXTERNAL_API_RETRIES),
+    baseCurrency: process.env.EXCHANGE_BASE_CURRENCY as string,
+  targetCurrency: process.env.EXCHANGE_TARGET_CURRENCY as string,
 }));

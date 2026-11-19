@@ -4,6 +4,8 @@ const validEnv = {
   MONGO_URI: 'mongodb://localhost:27017/validations',
   DYNAMODB_TABLE: 'validation-audit',
   EXTERNAL_API_URL: 'https://restcountries.com/v3.1',
+  EXCHANGE_BASE_CURRENCY: 'USD',
+  EXCHANGE_TARGET_CURRENCY: 'COP',
 };
 
 describe('envValidationSchema', () => {
