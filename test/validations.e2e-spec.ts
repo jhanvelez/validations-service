@@ -5,7 +5,7 @@ import request from 'supertest';
 import { inject } from 'vitest';
 import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
-import { mongoConfig } from '../src/dist/config/configuration.js';
+import { mongoConfig } from '../src/config/configuration.js';
 
 describe('Validations (e2e)', () => {
   let app: INestApplication<App>;
