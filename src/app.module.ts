@@ -2,7 +2,9 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, type ConfigType } from '@nestjs/config';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
+import { LoggerModule } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { buildLoggerParams } from './common/logger/logger.config.js';
 import {
   appConfig,
   dynamodbConfig,
@@ -10,6 +12,7 @@ import {
   mongoConfig,
 } from './config/configuration.js';
 import { envValidationSchema } from './config/env.validation.js';
+import { HealthModule } from './health/health.module.js';
 import { ValidationsModule } from './validations/validations.module.js';
 
 @Module({
@@ -27,6 +30,10 @@ import { ValidationsModule } from './validations/validations.module.js';
       }),
     }),
     ValidationsModule,
+    LoggerModule.forRootAsync({
+      inject: [appConfig.KEY],
+      useFactory: buildLoggerParams,
+    }),
   ],
   providers: [
     {
