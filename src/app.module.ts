@@ -30,6 +30,7 @@ import { ValidationsModule } from './validations/validations.module.js';
       }),
     }),
     ValidationsModule,
+    HealthModule,
     LoggerModule.forRootAsync({
       inject: [appConfig.KEY],
       useFactory: buildLoggerParams,
