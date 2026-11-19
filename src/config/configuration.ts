@@ -3,6 +3,7 @@ import { registerAs } from '@nestjs/config';
 export const appConfig = registerAs('app', () => ({
   env: process.env.NODE_ENV as string,
   port: Number(process.env.PORT),
+  logLevel: process.env.LOG_LEVEL as string,
 }));
 
 export const mongoConfig = registerAs('mongo', () => ({
